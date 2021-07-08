@@ -1,10 +1,11 @@
 #!/bin/bash
+# shellcheck disable=SC2068,SC2086
 # A simple shell script to improve testing Cobbler in e.g. a VM
 # Tested with openSUSE Tumbleweed
 # Author: Dominik Gedon (dgedon@suse.de)
 # -------------------------------------------------------------
 
-HOST_ISOS="~/host_isos"
+HOST_ISOS="$HOME/host_isos"
 MOUNTPOINT="/mnt2"
 
 mount_vm_dirs () {
