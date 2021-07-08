@@ -120,55 +120,42 @@ show_help () {
 
 # main routine
 case $1 in
-
     mount)
         mount_dirs $@
         ;;
-
     vmount)
         mount_vm_dirs $@
         ;;
-
     clean)
         clean_cobbler
         ;;
-
     clone)
         clone_cobbler
         ;;
-
     deps)
         install_deps
         ;;
-
     build)
         build_cobbler
         ;;
-
     restart)
         restart_cobbler
         ;;
-
     import)
         import_distro $@
         ;;
-
     system)
         create_system $@ $@
         ;;
-
     log)
         open_log
         ;;
-
     wlog)
         watch_log
         ;;
-
     help | --help)
         show_help
         ;;
-
     *)
         show_help
         ;;
