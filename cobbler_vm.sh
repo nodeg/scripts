@@ -57,8 +57,7 @@ install_deps () {
 
 build_cobbler () {
     echo "Building Cobbler"
-    cd ~/cobbler_test ||
-    sudo make install
+    sudo make install -C ~/cobbler_test
     cobbler version
 }
 
