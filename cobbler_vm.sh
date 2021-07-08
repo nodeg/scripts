@@ -4,37 +4,40 @@
 # Author: Dominik Gedon (dgedon@suse.de)
 # -------------------------------------------------------------
 
+HOST_ISOS="~/host_isos"
+MOUNTPOINT="/mnt2"
+
 mount_vm_dirs () {
-    if [ ! -e /mnt2 ]; then
-        mkdir /mnt2
+    if [ ! -e $MOUNTPOINT ]; then
+        mkdir $MOUNTPOINT
     fi
 
     if [ ! -e ~/host_isos ]; then
         mkdir ~/host_isos
     fi
 
-    echo "/mnt2 already mounted. Unmounting"
-    if mount | grep /mnt2; then
-        sudo mount /mnt2
+    echo "$MOUNTPOINT already mounted. Unmounting"
+    if mount | grep $MOUNTPOINT; then
+        sudo umount $MOUNTPOINT
     fi
 
-    echo "Mounting ISO directory and distro to /mnt2"
-    sudo mount -t 9p -o trans=virtio,version=9p2000.L /mnt ~/host_isos/
-    sudo mount -t iso9660 -o loop,ro $2 /mnt2
+    echo "Mounting host ISO directory to $HOST_ISOS and distro ISO to $MOUNTPOINT"
+    sudo mount -t 9p -o trans=virtio,version=9p2000.L /mnt $HOST_ISOS
+    sudo mount -t iso9660 -o loop,ro $2 $MOUNTPOINT
 }
 
 mount_dirs () {
-    if [ ! -e /mnt2 ]; then
-        mkdir /mnt2
+    if [ ! -e $MOUNTPOINT ]; then
+        mkdir $MOUNTPOINT
     fi
 
-    echo "/mnt2 already mounted. Unmounting"
-    if mount | grep /mnt2; then
-        sudo mount /mnt2
+    echo "$MOUNTPOINT already mounted. Unmounting"
+    if mount | grep $MOUNTPOINT; then
+        sudo umount $MOUNTPOINT
     fi
 
-    echo "Mounting ISO directory to /mnt2"
-    sudo mount -t iso9660 -o loop,ro $2 /mnt2
+    echo "Mounting ISO $2 to $MOUNTPOINT"
+    sudo mount -t iso9660 -o loop,ro $2 $MOUNTPOINT
 }
 
 clone_cobbler () {
@@ -73,7 +76,7 @@ clean_cobbler () {
 
 import_distro () {
     echo "Importing distro"
-    cobbler import --name=$2 --arch=x86_64 --path=/mnt2
+    cobbler import --name=$2 --path=$MOUNTPOINT
 }
 
 create_system () {
@@ -105,8 +108,8 @@ show_help () {
     echo "  clone       Clone the cobbler repo to ~/cobbler_test"
     echo "  deps        Install dependencies"
     echo "  import      Import a mounted distro into Cobbler ($0 import name)"
-    echo "  mount       Mount ISO to /mnt2 ($0 mount isoname)"
-    echo "  vmount      Mount host filesystem to /mnt in guest and mout ISO to /mnt2. ($0 vmount isoname)"
+    echo "  mount       Mount ISO to $MOUNTPOINT ($0 mount isoname)"
+    echo "  vmount      Mount host filesystem to /mnt in guest and mout ISO to $MOUNTPOINT. ($0 vmount isoname)"
     echo "  system      Create a new profile ($0 system name profilename)"
     echo "  log         Open the log file"
     echo "  wlog        Watch the log file"
