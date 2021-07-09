@@ -50,6 +50,9 @@ install_deps () {
 }
 
 build_cobbler () {
+    echo "Get latest updates from GitHub"
+    # the branch has to be selected manually
+    cd ~/cobbler_test && git pull
     echo "Building Cobbler"
     sudo make install -C ~/cobbler_test
     cobbler version
