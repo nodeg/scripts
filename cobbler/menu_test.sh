@@ -1,4 +1,9 @@
-#!/bin/sh
+#!/bin/bash
+
+# create fake kernel and initrd
+sudo touch /root/vmlinuz
+sudo touch /root/initrd
+
 
 cobbler menu add \
         --name packer \
@@ -9,7 +14,7 @@ cobbler distro add \
         --arch x86_64 \
         --kernel /root/vmlinuz \
         --kernel-options 'debug pxe_shell=yes' \
-        --initrd /root/pxeagent.gz \
+        --initrd /root/initrd \
         --boot-loaders 'grub ipxe' \
 
 cobbler profile add \
@@ -33,9 +38,5 @@ cobbler system add \
         --profile packer-centos-8.4-x86_64 \
         --server '<<inherit>>' \
         --boot-loaders 'grub ipxe' \
-        --kernel-options 'pxe_shell=yes pxe_script=http://${http_server}/cblr/svc/op/autoinstall/system/test' \
-        --mac 52:54:00:aa:aa:22 \
-        --autoinstall packer.sh \
-        --autoinstall-meta 'disk=/dev/sda image=esxi-6.7.0-u3-x86_64-v1.gz' \
         --enable-ipxe 0 \
         --netboot 1
