@@ -9,22 +9,12 @@ HOST_ISOS="$HOME/host_isos"
 MOUNTPOINT="/mnt2"
 
 mount_vm_dirs () {
-    if [ ! -e $MOUNTPOINT ]; then
-        mkdir $MOUNTPOINT
-    fi
-
     if [ ! -e ~/host_isos ]; then
         mkdir ~/host_isos
     fi
 
-    echo "$MOUNTPOINT already mounted. Unmounting"
-    if mount | grep $MOUNTPOINT; then
-        sudo umount $MOUNTPOINT
-    fi
-
-    echo "Mounting host ISO directory to $HOST_ISOS and distro ISO to $MOUNTPOINT"
+    echo "Mounting host ISO directory to $HOST_ISOS"
     sudo mount -t 9p -o trans=virtio,version=9p2000.L /mnt $HOST_ISOS
-    sudo mount -t iso9660 -o loop,ro $2 $MOUNTPOINT
 }
 
 mount_dirs () {
@@ -110,7 +100,7 @@ show_help () {
     echo "  deps        Install dependencies"
     echo "  import      Import a mounted distro into Cobbler ($0 import name)"
     echo "  mount       Mount ISO to $MOUNTPOINT ($0 mount isoname)"
-    echo "  vmount      Mount host filesystem to /mnt in guest and mout ISO to $MOUNTPOINT. ($0 vmount isoname)"
+    echo "  vmount      Mount host directory to $HOST_ISOS in guest"
     echo "  system      Create a new profile ($0 system name profilename)"
     echo "  log         Open the log file"
     echo "  wlog        Watch the log file"
