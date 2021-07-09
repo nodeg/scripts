@@ -5,12 +5,15 @@
 # Author: Dominik Gedon (dgedon@suse.de)
 # -------------------------------------------------------------
 
+
+NAME=cob
 HOST_ISOS="$HOME/host_isos"
 MOUNTPOINT="/mnt2"
+GIT_DIR="$HOME/cobblert"
 
 mount_vm_dirs () {
-    if [ ! -e ~/host_isos ]; then
-        mkdir ~/host_isos
+    if [ ! -e $HOST_ISOS ]; then
+        mkdir $HOST_ISOS
     fi
 
     echo "Mounting host ISO directory to $HOST_ISOS"
@@ -32,12 +35,12 @@ mount_dirs () {
 }
 
 clone_cobbler () {
-    if [ ! -e ~/cobbler_test ]; then
+    if [ ! -e $GIT_DIR ]; then
         if ! which git > /dev/null; then
             echo "git not found. Installing it."
             sudo zypper install -y git
         fi
-        git clone https://github.com/cobbler/cobbler.git ~/cobbler_test
+        git clone https://github.com/cobbler/cobbler.git $GIT_DIR
     fi
 }
 
@@ -45,16 +48,15 @@ install_deps () {
     echo "Installing dependencies"
     sudo zypper install -y python3 python3-cheetah python3-netaddr python3-simplejson python3-librepo python3-devel python3-pip python3-setuptools python3-wheel python3-distro python3-coverage python3-ldap python3-Sphinx apache2 apache2-devel apache2-mod_wsgi-python3 python3-dnspython rsync fence-agents genders xorriso tftp  supervisor ipmitool acl python3-PyYAML python3-schema
 
-    sudo pip3 install -r ~/cobbler_test/docs/requirements.rtd.txt
-    sudo pip3 install django file-magic ldap3 pymongo tornado dnspython mod_wsgi
+    sudo pip3 install file-magic ldap3 pymongo tornado dnspython mod_wsgi
 }
 
 build_cobbler () {
     echo "Get latest updates from GitHub"
     # the branch has to be selected manually
-    cd ~/cobbler_test && git pull
+    cd $GIT_DIR && git pull
     echo "Building Cobbler"
-    sudo make install -C ~/cobbler_test
+    sudo make install -C $GIT_DIR
     cobbler version
 }
 
@@ -63,20 +65,41 @@ clean_cobbler () {
     sudo rm /var/lib/cobbler/collections/distros/*
     sudo rm /var/lib/cobbler/collections/profiles/*
     sudo rm /var/lib/cobbler/collections/systems/*
+    sudo rm /var/lib/cobbler/collections/menus/*
+    sudo rm /var/lib/cobbler/collections/profiles/*
+    sudo rm /var/lib/cobbler/collections/repos/*
+    sudo rm /var/lib/cobbler/collections/images/*
+    sudo rm /var/lib/cobbler/collections/files/*
+    sudo rm -rf /srv/tftpboot
+    sudo rm -rf /srv/www/cobbler
     cobbler sync
     sudo rm /var/log/cobbler/cobbler.log
     restart_cobbler
 }
 
 import_distro () {
-    echo "Importing distro"
+    echo "Importing distro $2"
     cobbler import --name=$2 --path=$MOUNTPOINT
 }
 
+create_distro () {
+    touch $GIT_DIR/kernel
+    touch $GIT_DIR/initrd
+    KERNEL="$GIT_DIR/kernel"
+    INITRD="$GIT_DIR/initrd"
+
+    echo "Add distro with name $2"
+    cobbler distro add --name=$2 --kernel=$KERNEL --initrd=$INITRD
+}
+
+create_profile () {
+    echo "Add profile with name $2 and distro $3"
+    cobbler profile add --name=$2 --distro=$3
+}
+
 create_system () {
-    echo "Add system from distro"
+    echo "Add system with name $2"
     cobbler system add --name=$2 --profile=$3
-    #cobbler system edit --name=dom --boot-loaders="grub"
 }
 
 restart_cobbler () {
@@ -93,31 +116,57 @@ open_log () {
     less /var/log/cobbler/cobbler.log
 }
 
+check_par () {
+    if [ ! -n "$2" ]; then
+        echo "You have to supply 1 parameter."
+        exit 1;
+    fi
+}
+
+check_par2 () {
+    if [ ! -n "$2" ] && [ ! -n "$3" ]; then
+        echo "You have to supply 2 parameters."
+        exit 1;
+    fi
+}
+
 show_help () {
-    echo "Usage: $0 COMMAND [PARAMETERS]"
+    echo "Usage: $NAME OPTION [PARAMETER]"
+    echo "Helper utility/wrapper for testing Cobbler"
     echo
     echo "  help        Print this help message"
-    echo "  build       Build and install Cobbler in ~/cobbler_test"
+    echo "  build       Build and install Cobbler in $GIT_DIR"
     echo "  clean       Clean Cobbler files"
-    echo "  clone       Clone the cobbler repo to ~/cobbler_test"
+    echo "  clone       Clone the cobbler repo to $GIT_DIR"
     echo "  deps        Install dependencies"
-    echo "  import      Import a mounted distro into Cobbler ($0 import name)"
-    echo "  mount       Mount ISO to $MOUNTPOINT ($0 mount isoname)"
+    echo "  import      Import a mounted distro into Cobbler"
+    echo "  mount       Mount ISO to $MOUNTPOINT"
     echo "  vmount      Mount host directory to $HOST_ISOS in guest"
-    echo "  system      Create a new profile ($0 system name profilename)"
+    echo "  distro      Create a new distro"
+    echo "  profile     Create a new profile from distro"
+    echo "  system      Create a new system from profile"
     echo "  log         Open the log file"
     echo "  wlog        Watch the log file"
     echo ""
+    echo "Examples:"
+    echo ""
+    echo "  cob mount openSUSE-Leap-15.3-DVD-x86_64-Current.iso"
+    echo "  cob import name"
+    echo "  cob distro name"
+    echo "  cob profile name distro_name"
+    echo "  cob system name profil_ename"
     exit 1
 }
 
 # main routine
 case $1 in
     mount)
+        check_par
         mount_dirs $@
         ;;
     vmount)
-        mount_vm_dirs $@
+        check_par
+        mount_vm_dirs
         ;;
     clean)
         clean_cobbler
@@ -135,9 +184,19 @@ case $1 in
         restart_cobbler
         ;;
     import)
+        check_par
         import_distro $@
         ;;
+    distro)
+        check_par
+        create_distro $@
+        ;;
+    profile)
+        check_par2
+        create_profile $@ $@
+        ;;
     system)
+        check_par2
         create_system $@ $@
         ;;
     log)
