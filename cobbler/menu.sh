@@ -4,6 +4,10 @@
 sudo touch /root/vmlinuz
 sudo touch /root/initrd
 
+cobbler menu add \
+        --name mtest \
+        --display-name "Test menu"
+
 cobbler distro add \
         --name dtest \
         --arch x86_64 \
@@ -13,10 +17,14 @@ cobbler distro add \
 cobbler profile add \
         --name ptest \
         --distro dtest \
+        --enable-menu 1 \
+        --menu mtest
 
 cobbler profile add \
-        --name ptes2 \
+        --name ptest2 \
         --parent ptest \
+        --enable-menu 1 \
+        --menu mtest
 
 cobbler system add \
         --name stest \
