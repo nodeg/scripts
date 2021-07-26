@@ -5,11 +5,15 @@
 # Author: Dominik Gedon (dgedon@suse.de)
 # -------------------------------------------------------------
 
-
+VERSION=0.5
 NAME=cob
 HOST_ISOS="$HOME/host_isos"
 MOUNTPOINT="/mnt2"
 GIT_DIR="$HOME/cobblert"
+
+version () {
+    echo $NAME $VERSION
+}
 
 mount_vm_dirs () {
     if [ ! -e $HOST_ISOS ]; then
@@ -52,11 +56,14 @@ install_deps () {
 }
 
 build_cobbler () {
+    git status
     echo "Get latest updates from GitHub"
     # the branch has to be selected manually
     cd $GIT_DIR && git pull
     echo "Building Cobbler"
     sudo make install -C $GIT_DIR
+    restart_cobbler
+    echo "Cobbler version"
     cobbler version
 }
 
@@ -103,8 +110,15 @@ create_system () {
 }
 
 restart_cobbler () {
-    echo "Restarting cobblerd service"
-    sudo systemctl restart cobblerd
+    if systemctl status cobblerd | grep inactive; then
+        echo "Starting cobblerd"
+        sudo systemctl start cobblerd
+    else
+        echo "Restarting cobblerd service"
+        sudo systemctl restart cobblerd
+    fi
+    echo "Sleep 3s"
+    sleep 3s
     sudo systemctl status cobblerd
 }
 
@@ -117,14 +131,14 @@ open_log () {
 }
 
 check_par () {
-    if [ ! -n "$2" ]; then
+    if [ -z "$2" ]; then
         echo "You have to supply 1 parameter."
         exit 1;
     fi
 }
 
 check_par2 () {
-    if [ ! -n "$2" ] && [ ! -n "$3" ]; then
+    if [ -z "$2" ] && [ -z "$3" ]; then
         echo "You have to supply 2 parameters."
         exit 1;
     fi
@@ -147,6 +161,7 @@ show_help () {
     echo "  system      Create a new system from profile"
     echo "  log         Open the log file"
     echo "  wlog        Watch the log file"
+    echo "  version     Show version nubmer"
     echo ""
     echo "Examples:"
     echo ""
@@ -154,18 +169,17 @@ show_help () {
     echo "  cob import name"
     echo "  cob distro name"
     echo "  cob profile name distro_name"
-    echo "  cob system name profil_ename"
+    echo "  cob system name profile_name"
     exit 1
 }
 
 # main routine
 case $1 in
     mount)
-        check_par
+        check_par $@
         mount_dirs $@
         ;;
     vmount)
-        check_par
         mount_vm_dirs
         ;;
     clean)
@@ -184,19 +198,19 @@ case $1 in
         restart_cobbler
         ;;
     import)
-        check_par
+        check_par $@
         import_distro $@
         ;;
     distro)
-        check_par
+        check_par $@
         create_distro $@
         ;;
     profile)
-        check_par2
+        check_par2 $@
         create_profile $@ $@
         ;;
     system)
-        check_par2
+        check_par2 $@
         create_system $@ $@
         ;;
     log)
@@ -204,6 +218,9 @@ case $1 in
         ;;
     wlog)
         watch_log
+        ;;
+    version)
+        version
         ;;
     help | --help)
         show_help
