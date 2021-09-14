@@ -161,15 +161,15 @@ show_help () {
     echo "  system      Create a new system from profile"
     echo "  log         Open the log file"
     echo "  wlog        Watch the log file"
-    echo "  version     Show version nubmer"
+    echo "  version     Show the version number"
     echo ""
     echo "Examples:"
     echo ""
-    echo "  cob mount openSUSE-Leap-15.3-DVD-x86_64-Current.iso"
-    echo "  cob import name"
-    echo "  cob distro name"
-    echo "  cob profile name distro_name"
-    echo "  cob system name profile_name"
+    echo "  $NAME mount openSUSE-Leap-15.3-DVD-x86_64-Current.iso"
+    echo "  $NAME import name"
+    echo "  $NAME distro name"
+    echo "  $NAME profile name distro_name"
+    echo "  $NAME system name profile_name"
     exit 1
 }
 
