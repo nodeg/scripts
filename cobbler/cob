@@ -5,11 +5,14 @@
 # Author: Dominik Gedon (dgedon@suse.de)
 # -------------------------------------------------------------
 
+## adjust to your needs
+HOST_ISOS="$HOME/isos"
+MOUNTPOINT="/mnt2"
+GIT_DIR="$HOME/cobbler"
+
+## general information
 VERSION=0.5
 NAME=cob
-HOST_ISOS="$HOME/host_isos"
-MOUNTPOINT="/mnt2"
-GIT_DIR="$HOME/cobblert"
 
 version () {
     echo $NAME $VERSION
