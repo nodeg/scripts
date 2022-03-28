@@ -1,5 +1,5 @@
 #!/bin/bash
-# shellcheck disable=SC2068,SC2086
+# shellcheck disable=SC2068,SC2086,SC2102
 # A simple shell script to improve testing Cobbler in e.g. a VM
 # Tested with openSUSE Tumbleweed
 # Author: Dominik Gedon (dgedon@suse.de)
@@ -11,7 +11,7 @@ MOUNTPOINT="/mnt2"
 GIT_DIR="$HOME/cobbler"
 
 ## general information
-VERSION=0.5
+VERSION=0.6
 NAME=cob
 
 version () {
@@ -53,9 +53,44 @@ clone_cobbler () {
 
 install_deps () {
     echo "Installing dependencies"
-    sudo zypper install -y python3 python3-cheetah python3-netaddr python3-simplejson python3-librepo python3-devel python3-pip python3-setuptools python3-wheel python3-distro python3-coverage python3-ldap python3-Sphinx apache2 apache2-devel apache2-mod_wsgi-python3 python3-dnspython rsync fence-agents genders xorriso tftp  supervisor ipmitool acl python3-PyYAML python3-schema
+    sudo zypper install -y python3 python3-cheetah python3-netaddr python3-simplejson python3-librepo python3-devel python3-pip python3-setuptools python3-wheel python3-distro python3-coverage python3-ldap python3-Sphinx apache2 apache2-devel apache2-mod_wsgi-python3 python3-dnspython rsync fence-agents genders xorriso tftp  supervisor ipmitool acl python3-PyYAML python3-schema docker
+    pip3 install file-magic ldap3 pymongo tornado dnspython mod_wsgi prospector[with_pyroma] prospector[with_frosted] prospector[with_mypy] prospector[with_vulture]
 
-    sudo pip3 install file-magic ldap3 pymongo tornado dnspython mod_wsgi
+    echo "Building and installing codacy cli"
+    curl -L https://github.com/codacy/codacy-analysis-cli/archive/master.tar.gz | tar xvz
+    cd codacy-analysis-cli-* && sudo make install
+}
+
+codacy_check () {
+    # TODO: write usage submenu for this and add possibility to specify codacy tool
+    # $2 dir
+    # $3 toolname: prospector, codacy
+    # $4 extra params for tool
+    # $5 codacy token
+    if ! which codacy-analysis-cli > /dev/null; then
+        echo "codacy-analysis-cli not installed. Plese use $NAME install_deps first"
+    fi
+    if [ -z "$2" ]; then
+        echo "You have to specify a directory"
+    else
+        echo "Running codacy cli with pylint"
+        codacy-analysis-cli analyze --directory "$2" --tool pylintpython3
+        echo "Running codacy cli with bandit"
+        codacy-analysis-cli analyze --directory "$2" --tool bandit
+    fi
+}
+
+prospector_check () {
+    if ! which prospector > /dev/null; then
+        echo "Prospector not installed. Plese use $NAME install_deps first"
+    fi
+    if [ -z "$2" ]; then
+        echo "You have to specify a directory"
+    else
+        echo "$2"
+        echo "Running prospector with pyroma"
+        prospector --tool pyroma "$2"
+    fi
 }
 
 build_cobbler () {
@@ -155,12 +190,14 @@ show_help () {
     echo "  build       Build and install Cobbler in $GIT_DIR"
     echo "  clean       Clean Cobbler files"
     echo "  clone       Clone the cobbler repo to $GIT_DIR"
+    echo "  codacy      Check the code with Codacy CLI"
     echo "  deps        Install dependencies"
     echo "  import      Import a mounted distro into Cobbler"
     echo "  mount       Mount ISO to $MOUNTPOINT"
     echo "  vmount      Mount host directory to $HOST_ISOS in guest"
     echo "  distro      Create a new distro"
     echo "  profile     Create a new profile from distro"
+    echo "  prospector  Check the code with prospector"
     echo "  system      Create a new system from profile"
     echo "  log         Open the log file"
     echo "  wlog        Watch the log file"
@@ -173,11 +210,19 @@ show_help () {
     echo "  $NAME distro name"
     echo "  $NAME profile name distro_name"
     echo "  $NAME system name profile_name"
+    echo "  $NAME codacy ~/git/cobbler/cobbler"
+    echo "  $NAME prospector ~/git/cobbler"
     exit 1
 }
 
 # main routine
 case $1 in
+    codacy)
+        codacy_check $@
+        ;;
+    prospector)
+        prospector_check $@
+        ;;
     mount)
         check_par $@
         mount_dirs $@
