@@ -7,12 +7,12 @@
 
 # TODO
 # - Ability to input a VM domain name
-# - Remove duplicate virsh code
 # - Add proper return codes
 
 VERSION=0.2
 NAME=vms
 
+# Delete all VMs/pools/networks
 clean () {
     for vm in $(virsh list --name| grep "^${2}"); do virsh destroy $vm; done
     for vm in $(virsh list --all --name | grep "^${2}"); do virsh undefine --nvram $vm; done
@@ -23,53 +23,59 @@ clean () {
 
 # Create snpashots
 create () {
-    virsh snapshot-create-as --domain "${2}"-ctl --name "${2}-ctl_vm_core_passed" --description "${2}-ctl vm core passed"
-    virsh snapshot-create-as --domain "${2}"-srv --name "${2}-srv_vm_core_passed" --description "${2}-srv vm core passed"
-    virsh snapshot-create-as --domain "${2}"-cli-sles15 --name "${2}-cli-sles15_vm_core_passed" --description "${2}-cli-sles15 vm core passed"
-    virsh snapshot-create-as --domain "${2}"-min-sles15 --name "${2}-min-sles15_vm_core_passed" --description "${2}-min-sles15 vm core passed"
-    virsh snapshot-create-as --domain "${2}"-pxy --name "${2}-pxy_vm_core_passed" --description "${2}-pxy vm core passed"
-    virsh snapshot-create-as --domain "${2}"-minssh-sles15 --name "${2}-minssh-sles15_vm_core_passed" --description "${2}-minssh-sles15 vm core passed"
-    virsh snapshot-create-as --domain "${2}"-min-centos7 --name "${2}-min-centos7_vm_core_passed" --description "${2}-min-centos7 vm core passed"
-    virsh snapshot-create-as --domain "${2}"-min-kvm --name "${2}-min-kvm_vm_core_passed" --description "${2}-min-kvm vm core passed"
-    virsh snapshot-create-as --domain "${2}"-min-pxeboot --name "${2}-min-pxeboot_vm_core_passed" --description "${2}-min-pxeboot vm core passed"
-    virsh snapshot-create-as --domain "${2}"-min-ubuntu2004 --name "${2}-min-ubuntu2004_vm_core_passed" --description "${2}-min-ubuntu2004 vm core passed"
-    virsh snapshot-create-as --domain "${2}"-min-build --name "${2}-min-build_vm_core_passed" --description "${2}-min-build vm core passed"
-    virsh snapshot-create-as --domain "${2}"-min-xen --name "${2}-min-xen_vm_core_passed" --description "${2}-min-xen vm core passed"
+    for vm in "${2}"-ctl \
+              "${2}"-srv \
+              "${2}"-cli-sles15 \
+              "${2}"-min-sles15 \
+              "${2}"-min-build \
+              "${2}"-min-centos7 \
+              "${2}"-min-kvm \
+              "${2}"-min-pxeboot \
+              "${2}"-min-ubuntu2004 \
+              "${2}"-min-xen \
+              "${2}"-minssh-sles15 \
+              "${2}"-pxy; do
+        virsh snapshot-create-as --domain "${vm}" --name "${vm}_vm_core_passed" --description "${vm} vm core passed"
+    done
 }
 
-# Dekete snapshots
+# Delete snapshots
 delete () {
-    virsh snapshot-delete --domain "${2}"-ctl --snapshotname "${2}-ctl_vm_core_passed" > /dev/null 2>&1 ||:
-    virsh snapshot-delete --domain "${2}"-srv --snapshotname "${2}-srv_vm_core_passed" > /dev/null 2>&1 ||:
-    virsh snapshot-delete --domain "${2}"-cli-sles15 --snapshotname "${2}-cli-sles15_vm_core_passed" > /dev/null 2>&1 ||:
-    virsh snapshot-delete --domain "${2}"-min-sles15 --snapshotname "${2}-min-sles15_vm_core_passed" > /dev/null 2>&1 ||:
-    virsh snapshot-delete --domain "${2}"-min-build --snapshotname "${2}-min-build_vm_core_passed" > /dev/null 2>&1 ||:
-    virsh snapshot-delete --domain "${2}"-min-centos7 --snapshotname "${2}-min-centos7_vm_core_passed" > /dev/null 2>&1 ||:
-    virsh snapshot-delete --domain "${2}"-min-kvm --snapshotname "${2}-min-kvm_vm_core_passed" > /dev/null 2>&1 ||:
-    virsh snapshot-delete --domain "${2}"-min-pxeboot --snapshotname "${2}-min-pxeboot_vm_core_passed" > /dev/null 2>&1 ||:
-    virsh snapshot-delete --domain "${2}"-min-ubuntu2004 --snapshotname "${2}-min-ubuntu2004_vm_core_passed" > /dev/null 2>&1 ||:
-    virsh snapshot-delete --domain "${2}"-min-xen --snapshotname "${2}-min-xen_vm_core_passed" > /dev/null 2>&1 ||:
-    virsh snapshot-delete --domain "${2}"-minssh-sles15 --snapshotname "${2}-minssh-sles15_vm_core_passed" > /dev/null 2>&1 ||:
-    virsh snapshot-delete --domain "${2}"-pxy --snapshotname "${2}-pxy_vm_core_passed" > /dev/null 2>&1 ||:
+    for vm in "${2}"-ctl \
+              "${2}"-srv \
+              "${2}"-cli-sles15 \
+              "${2}"-min-sles15 \
+              "${2}"-min-build \
+              "${2}"-min-centos7 \
+              "${2}"-min-kvm \
+              "${2}"-min-pxeboot \
+              "${2}"-min-ubuntu2004 \
+              "${2}"-min-xen \
+              "${2}"-minssh-sles15 \
+              "${2}"-pxy; do
+        virsh snapshot-delete --domain "${vm}" "${vm}_vm_core_passed"
+    done
 }
 
-# revert to snapshot
+# Revert to snapshot
 revert () {
-    virsh snapshot-revert --domain "${2}"-ctl --snapshotname "${2}-ctl_vm_core_passed" --running
-    virsh snapshot-revert --domain "${2}"-srv --snapshotname "${2}-srv_vm_core_passed" --running
-    virsh snapshot-revert --domain "${2}"-cli-sles15 --snapshotname "${2}-cli-sles15_vm_core_passed" --running
-    virsh snapshot-revert --domain "${2}"-min-sles15 --snapshotname "${2}-min-sles15_vm_core_passed" --running
-    virsh snapshot-revert --domain "${2}"-min-build --snapshotname "${2}-min-build_vm_core_passed" --running
-    virsh snapshot-revert --domain "${2}"-min-centos7 --snapshotname "${2}-min-centos7_vm_core_passed" --running
-    virsh snapshot-revert --domain "${2}"-min-kvm --snapshotname "${2}-min-kvm_vm_core_passed" --running
-    virsh snapshot-revert --domain "${2}"-min-pxeboot --snapshotname "${2}-min-pxeboot_vm_core_passed" --running
-    virsh snapshot-revert --domain "${2}"-min-ubuntu2004 --snapshotname "${2}-min-ubuntu2004_vm_core_passed" --running
-    virsh snapshot-revert --domain "${2}"-min-xen --snapshotname "${2}-min-xen_vm_core_passed" --running
-    virsh snapshot-revert --domain "${2}"-minssh-sles15 --snapshotname "${2}-minssh-sles15_vm_core_passed" --running
-    virsh snapshot-revert --domain "${2}"-pxy --snapshotname "${2}-pxy_vm_core_passed" --running
+    for vm in "${2}"-ctl \
+              "${2}"-srv \
+              "${2}"-cli-sles15 \
+              "${2}"-min-sles15 \
+              "${2}"-min-build \
+              "${2}"-min-centos7 \
+              "${2}"-min-kvm \
+              "${2}"-min-pxeboot \
+              "${2}"-min-ubuntu2004 \
+              "${2}"-min-xen \
+              "${2}"-minssh-sles15 \
+              "${2}"-pxy; do
+        virsh snapshot-revert --domain "${vm}" --snapshotname "${vm}_vm_core_passed" --running
+    done
 }
 
-# show name and ip addresses
+# Show name and ip addresses
 info () {
     command='{"execute":"guest-network-get-interfaces"}'
 
@@ -83,6 +89,7 @@ info () {
     done
 }
 
+# Start VMs
 start () {
     for vm in "${2}"-ctl \
               "${2}"-srv \
@@ -100,6 +107,7 @@ start () {
     done
 }
 
+# Stop VMs
 stop () {
     for vm in "${2}"-ctl \
               "${2}"-srv \
@@ -117,7 +125,7 @@ stop () {
     done
 }
 
-# show the help
+# Show the help
 help () {
     echo "$NAME $VERSION"
     echo "Usage: $NAME OPTION [PARAMETER]"
@@ -140,7 +148,7 @@ help () {
     exit 1
 }
 
-# check if second parameter is empty
+# Check if second parameter is empty
 check_par () {
     if [ -z "$2" ]; then
         echo "You have to provide the prefix of the environment as a parameter. Example: dge"
@@ -148,7 +156,7 @@ check_par () {
     fi
 }
 
-# main rutine
+# Main rutine
 case $1 in
     clean)
         check_par $@
