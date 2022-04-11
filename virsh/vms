@@ -9,13 +9,13 @@
 # - Ability to input a VM domain name
 # - Add proper return codes
 
-VERSION=0.2
+VERSION=0.3
 NAME=vms
 
 # Delete all VMs/pools/networks
 clean () {
-    for vm in $(virsh list --name| grep "^${2}"); do virsh destroy $vm; done
-    for vm in $(virsh list --all --name | grep "^${2}"); do virsh undefine --nvram $vm; done
+    for vm in $(virsh list --name| grep "^${2}"); do virsh destroy "${vm}"; done
+    for vm in $(virsh list --all --name | grep "^${2}"); do virsh undefine --nvram "${vm}"; done
     for pool in $(virsh pool-list | grep "active" | cut -d " " -f2); do for volume in $(virsh vol-list --pool $pool | grep "^${2}" | cut -d " " -f2 ); do virsh vol-delete $volume --pool $pool; done; done
     for net in $(virsh net-list --name| grep "^${2}" ); do virsh net-destroy $net; done
     for net in $(virsh net-list --all --name | grep "^${2}"); do virsh net-undefine $net; done
@@ -103,7 +103,7 @@ start () {
               "${2}"-min-xen \
               "${2}"-minssh-sles15 \
               "${2}"-pxy; do
-        virsh start $vm
+        virsh start "${vm}"
     done
 }
 
@@ -125,6 +125,24 @@ stop () {
     done
 }
 
+# Show VM snapshots
+show () {
+    for vm in "${2}"-ctl \
+              "${2}"-srv \
+              "${2}"-cli-sles15 \
+              "${2}"-min-sles15 \
+              "${2}"-min-build \
+              "${2}"-min-centos7 \
+              "${2}"-min-kvm \
+              "${2}"-min-pxeboot \
+              "${2}"-min-ubuntu2004 \
+              "${2}"-min-xen \
+              "${2}"-minssh-sles15 \
+              "${2}"-pxy; do
+        virsh snapshot-list "${vm}"
+    done
+}
+
 # Show the help
 help () {
     echo "$NAME $VERSION"
@@ -136,6 +154,7 @@ help () {
     echo "  delete Delete a snapshot"
     echo "  info   Show the name and the IP addresses of all VMs"
     echo "  revert Revert to the snapshot created with 'create'"
+    echo "  show   Show the snapshots of all VMs"
     echo "  start  Start VMs"
     echo "  stop   Stop VMs"
     echo "  help   Print this help message"
@@ -176,6 +195,10 @@ case $1 in
     revert)
         check_par $@
         revert $@
+        ;;
+    show)
+        check_par $@
+        show $@
         ;;
     start)
         check_par $@
