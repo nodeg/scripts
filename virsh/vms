@@ -6,23 +6,28 @@
 # --------------------------------------------------------------------------
 
 # TODO
-# - Ability to input a VM domain name
 # - Add proper return codes
+# - Possibility to just work with defined VMs
 
-VERSION=0.3
+VERSION=0.4
 NAME=vms
 
 # Delete all VMs/pools/networks
 clean () {
     for vm in $(virsh list --name| grep "^${2}"); do virsh destroy "${vm}"; done
     for vm in $(virsh list --all --name | grep "^${2}"); do virsh undefine --nvram "${vm}"; done
-    for pool in $(virsh pool-list | grep "active" | cut -d " " -f2); do for volume in $(virsh vol-list --pool $pool | grep "^${2}" | cut -d " " -f2 ); do virsh vol-delete $volume --pool $pool; done; done
-    for net in $(virsh net-list --name| grep "^${2}" ); do virsh net-destroy $net; done
-    for net in $(virsh net-list --all --name | grep "^${2}"); do virsh net-undefine $net; done
+    for pool in $(virsh pool-list | grep "active" | cut -d " " -f2); do for volume in $(virsh vol-list --pool "${pool}" | grep "^${2}" | cut -d " " -f2 ); do virsh vol-delete $volume --pool "${pool}"; done; done
+    for net in $(virsh net-list --name| grep "^${2}" ); do virsh net-destroy "${net}"; done
+    for net in $(virsh net-list --all --name | grep "^${2}"); do virsh net-undefine "${net}"; done
 }
 
 # Create snpashots
 create () {
+    if [ -z "$3" ]; then
+        echo "You have to provide a name for the snapshot. Example: vm_core_passed"
+        exit 1;
+    fi
+    echo "$3"
     for vm in "${2}"-ctl \
               "${2}"-srv \
               "${2}"-cli-sles15 \
@@ -35,12 +40,18 @@ create () {
               "${2}"-min-xen \
               "${2}"-minssh-sles15 \
               "${2}"-pxy; do
-        virsh snapshot-create-as --domain "${vm}" --name "${vm}_vm_core_passed" --description "${vm} vm core passed"
+        virsh snapshot-create-as --domain "${vm}" --name "${vm}_${3}" --description "${vm}_${vm}"
     done
 }
 
 # Delete snapshots
 delete () {
+    if [ -z "$3" ]; then
+        echo "You have to provide the name of the snapshot you want to delete without the prefix."
+        echo "To list the current snapshots use: $NAME show"
+        echo "Example: $NAME delete dge vm_core_passed"
+        exit 1;
+    fi
     for vm in "${2}"-ctl \
               "${2}"-srv \
               "${2}"-cli-sles15 \
@@ -53,12 +64,18 @@ delete () {
               "${2}"-min-xen \
               "${2}"-minssh-sles15 \
               "${2}"-pxy; do
-        virsh snapshot-delete --domain "${vm}" "${vm}_vm_core_passed"
+        virsh snapshot-delete --domain "${vm}" "${vm}_${3}"
     done
 }
 
 # Revert to snapshot
 revert () {
+    if [ -z "$3" ]; then
+        echo "You have to provide the name of the snapshot you want to revert to without the prefix."
+        echo "To list the current snapshots use: $NAME show"
+        echo "Example: $NAME revert dge vm_core_passed"
+        exit 1;
+    fi
     for vm in "${2}"-ctl \
               "${2}"-srv \
               "${2}"-cli-sles15 \
@@ -71,7 +88,7 @@ revert () {
               "${2}"-min-xen \
               "${2}"-minssh-sles15 \
               "${2}"-pxy; do
-        virsh snapshot-revert --domain "${vm}" --snapshotname "${vm}_vm_core_passed" --running
+        virsh snapshot-revert --domain "${vm}" --snapshotname "${vm}_${3}" --running
     done
 }
 
@@ -161,9 +178,10 @@ help () {
     echo ""
     echo "Examples:"
     echo ""
-    echo "  $NAME create dge"
+    echo "  $NAME create dge vm_core_passed"
+    echo "  $NAME delete dge vm_core_passed"
     echo "  $NAME info"
-    echo "  $NAME revert dge"
+    echo "  $NAME revert dge vm_core_passed"
     exit 1
 }
 
