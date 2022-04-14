@@ -7,10 +7,9 @@
 
 # TODO
 # - Add proper return codes
-# - Improve IP address output
 # - Add ability to create/delete/revert snapshots for certain VMs and not always use all
 
-VERSION=0.7
+VERSION=0.8
 NAME=vms
 
 # Delete all VMs/pools/networks
@@ -72,13 +71,19 @@ info () {
             virsh qemu-agent-command "$vm" "$command" --pretty \
                 | grep '"ip-address"' \
                 | sed 's/       "ip-address": "//; s/",$//' \
+                | sed 's/   ::1//' \
+                | sed 's/   127.0.0.1//' \
                 | tr '\n' ' '
-            echo
+            echo ""
         done
     else
         virsh qemu-agent-command "$2" "$command" --pretty \
             | grep '"ip-address"' \
-            | sed 's/       "ip-address": "//; s/",$//'
+            | sed 's/          "ip-address": "127.0.0.1",//' \
+            | sed 's/          "ip-address": "::1",//' \
+            | sed 's/       "ip-address": "//; s/",$//' \
+            | tr -d '[:blank:]' \
+            | sed '/^$/d'
     fi
 }
 
@@ -92,7 +97,18 @@ start () {
         exit 1;
     fi
     if [ "$3" == "all" ]; then
-        for vm in $(virsh list --name| grep "^${2}"); do
+        for vm in "${2}"-ctl \
+                "${2}"-srv \
+                "${2}"-cli-sles15 \
+                "${2}"-min-sles15 \
+                "${2}"-min-build \
+                "${2}"-min-centos7 \
+                "${2}"-min-kvm \
+                "${2}"-min-pxeboot \
+                "${2}"-min-ubuntu2004 \
+                "${2}"-min-xen \
+                "${2}"-minssh-sles15 \
+                "${2}"-pxy; do
             virsh start "${vm}"
         done
     else
