@@ -38,7 +38,7 @@ create () {
 delete () {
     if [ -z "$3" ]; then
         echo "You have to provide the name of the snapshot you want to delete."
-        echo "To list the current snapshots use: $NAME show"
+        echo "To list the current snapshots use: $NAME list"
         echo "Example: $NAME delete <prefix> <snapshot_name>"
         echo "Example: $NAME delete dge core_passed"
         exit 1;
@@ -52,7 +52,7 @@ delete () {
 revert () {
     if [ -z "$3" ]; then
         echo "You have to provide the name of the snapshot you want to revert."
-        echo "To list the current snapshots use: $NAME show"
+        echo "To list the current snapshots use: $NAME list"
         echo "Example: $NAME revert <prefix> <snapshot_name>"
         echo "Example: $NAME revert dge core_passed"
         exit 1;
@@ -145,6 +145,7 @@ list () {
     fi
     if [ "$3" == "all" ]; then
         for vm in $(virsh list --name| grep "^${2}"); do
+            echo "${vm}:"
             virsh snapshot-list "${vm}"
         done
     else
