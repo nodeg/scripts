@@ -8,8 +8,9 @@
 # TODO
 # - Add proper return codes
 # - Improve IP address output
+# - Add ability to create/delete/revert snapshots for certain VMs and not always use all
 
-VERSION=0.5
+VERSION=0.6
 NAME=vms
 
 # Delete all VMs/pools/networks
@@ -24,7 +25,8 @@ clean () {
 # Create snpashots
 create () {
     if [ -z "$3" ]; then
-        echo "You have to provide a name for the snapshot. Example: vm_core_passed"
+        echo "You have to provide a name for the snapshot. Example: core_passed"
+        echo "The snapshot is then created with the following name: <prefix>_core_passed"
         exit 1;
     fi
     echo "$3"
@@ -40,17 +42,17 @@ create () {
               "${2}"-min-xen \
               "${2}"-minssh-sles15 \
               "${2}"-pxy; do
-        virsh snapshot-create-as --domain "${vm}" --name "${vm}_${3}" --description "${vm}_${vm}"
+        virsh snapshot-create-as --domain "${vm}" --name "${3}" --description "${vm}_${3}"
     done
 }
 
 # Delete snapshots
 delete () {
     if [ -z "$3" ]; then
-        echo "You have to provide the name of the snapshot you want to delete without the prefix."
+        echo "You have to provide the name of the snapshot you want to delete."
         echo "To list the current snapshots use: $NAME show"
         echo "Example: $NAME delete <prefix> <snapshot_name>"
-        echo "Example: $NAME delete dge vm_core_passed"
+        echo "Example: $NAME delete dge core_passed"
         exit 1;
     fi
     for vm in "${2}"-ctl \
@@ -65,17 +67,17 @@ delete () {
               "${2}"-min-xen \
               "${2}"-minssh-sles15 \
               "${2}"-pxy; do
-        virsh snapshot-delete --domain "${vm}" "${vm}_${3}"
+        virsh snapshot-delete --domain "${vm}" "${3}"
     done
 }
 
 # Revert to snapshot
 revert () {
     if [ -z "$3" ]; then
-        echo "You have to provide the name of the snapshot you want to revert to without the prefix."
+        echo "You have to provide the name of the snapshot you want to revert."
         echo "To list the current snapshots use: $NAME show"
         echo "Example: $NAME revert <prefix> <snapshot_name>"
-        echo "Example: $NAME revert dge vm_core_passed"
+        echo "Example: $NAME revert dge core_passed"
         exit 1;
     fi
     for vm in "${2}"-ctl \
@@ -90,7 +92,7 @@ revert () {
               "${2}"-min-xen \
               "${2}"-minssh-sles15 \
               "${2}"-pxy; do
-        virsh snapshot-revert --domain "${vm}" --snapshotname "${vm}_${3}" --running
+        virsh snapshot-revert --domain "${vm}" --snapshotname "${3}"
     done
 }
 
@@ -138,7 +140,7 @@ start () {
             virsh start "${vm}"
         done
     else
-        virsh start "${2}"-"${3}"
+        virsh start "${3}"
     fi
 }
 
@@ -167,17 +169,17 @@ stop () {
             virsh shutdown "${vm}"
         done
     else
-        virsh shutdown "${2}"-"${3}"
+        virsh shutdown "${3}"
     fi
 }
 
 # Show VM snapshots
-show () {
+list () {
     if [ -z "$3" ]; then
         echo "You have to provide a prefix and <all> or <vm_name> to show all or only a specific VM snapshot."
         echo "To list the current VMs use: $NAME info"
-        echo "Example: $NAME show dge all"
-        echo "Example: $NAME show dge cli-sles15"
+        echo "Example: $NAME list dge all"
+        echo "Example: $NAME list dge cli-sles15"
         exit 1;
     fi
     if [ "$3" == "all" ]; then
@@ -196,7 +198,7 @@ show () {
             virsh snapshot-list "${vm}"
         done
     else
-        virsh snapshot-list "${2}"-"${3}"
+        virsh snapshot-list "${3}"
     fi
 }
 
@@ -210,22 +212,25 @@ help () {
     echo "  create Create a snapshot"
     echo "  delete Delete a snapshot"
     echo "  info   Show the name and the IP addresses of a VM"
+    echo "  list   Show the snapshots of a VM"
     echo "  revert Revert to a given snapshot"
-    echo "  show   Show the snapshots of a VM"
     echo "  start  Start VMs"
     echo "  stop   Stop VMs"
     echo "  help   Print this help message"
     echo ""
     echo "Examples:"
     echo ""
-    echo "  $NAME create dge vm_core_passed"
-    echo "  $NAME delete dge vm_core_passed"
+    echo "  $NAME create dge core_passed"
+    echo "  $NAME revert dge core_passed"
+    echo "  $NAME delete dge core_passed"
     echo "  $NAME info"
     echo "  $NAME info dge-srv"
-    echo "  $NAME revert dge vm_core_passed"
-    echo "  $NAME show dge all"
-    echo "  $NAME stop dge"
-    echo "  $NAME stop dge srv"
+    echo "  $NAME list dge all"
+    echo "  $NAME list dge dge-srv"
+    echo "  $NAME stop dge all"
+    echo "  $NAME stop dge dge-srv"
+    echo "  $NAME start dge all"
+    echo "  $NAME start dge dge-srv"
     exit 1
 }
 
@@ -254,13 +259,13 @@ case $1 in
     info)
         info $@
         ;;
+    list)
+        check_par $@
+        list $@
+        ;;
     revert)
         check_par $@
         revert $@
-        ;;
-    show)
-        check_par $@
-        show $@
         ;;
     start)
         check_par $@
