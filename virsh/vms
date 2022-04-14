@@ -10,7 +10,7 @@
 # - Improve IP address output
 # - Add ability to create/delete/revert snapshots for certain VMs and not always use all
 
-VERSION=0.6
+VERSION=0.7
 NAME=vms
 
 # Delete all VMs/pools/networks
@@ -30,18 +30,7 @@ create () {
         exit 1;
     fi
     echo "$3"
-    for vm in "${2}"-ctl \
-              "${2}"-srv \
-              "${2}"-cli-sles15 \
-              "${2}"-min-sles15 \
-              "${2}"-min-build \
-              "${2}"-min-centos7 \
-              "${2}"-min-kvm \
-              "${2}"-min-pxeboot \
-              "${2}"-min-ubuntu2004 \
-              "${2}"-min-xen \
-              "${2}"-minssh-sles15 \
-              "${2}"-pxy; do
+    for vm in $(virsh list --name| grep "^${2}"); do
         virsh snapshot-create-as --domain "${vm}" --name "${3}" --description "${vm}_${3}"
     done
 }
@@ -55,18 +44,7 @@ delete () {
         echo "Example: $NAME delete dge core_passed"
         exit 1;
     fi
-    for vm in "${2}"-ctl \
-              "${2}"-srv \
-              "${2}"-cli-sles15 \
-              "${2}"-min-sles15 \
-              "${2}"-min-build \
-              "${2}"-min-centos7 \
-              "${2}"-min-kvm \
-              "${2}"-min-pxeboot \
-              "${2}"-min-ubuntu2004 \
-              "${2}"-min-xen \
-              "${2}"-minssh-sles15 \
-              "${2}"-pxy; do
+    for vm in $(virsh list --name| grep "^${2}"); do
         virsh snapshot-delete --domain "${vm}" "${3}"
     done
 }
@@ -80,18 +58,7 @@ revert () {
         echo "Example: $NAME revert dge core_passed"
         exit 1;
     fi
-    for vm in "${2}"-ctl \
-              "${2}"-srv \
-              "${2}"-cli-sles15 \
-              "${2}"-min-sles15 \
-              "${2}"-min-build \
-              "${2}"-min-centos7 \
-              "${2}"-min-kvm \
-              "${2}"-min-pxeboot \
-              "${2}"-min-ubuntu2004 \
-              "${2}"-min-xen \
-              "${2}"-minssh-sles15 \
-              "${2}"-pxy; do
+    for vm in $(virsh list --name| grep "^${2}"); do
         virsh snapshot-revert --domain "${vm}" --snapshotname "${3}"
     done
 }
@@ -125,18 +92,7 @@ start () {
         exit 1;
     fi
     if [ "$3" == "all" ]; then
-        for vm in "${2}"-ctl \
-                "${2}"-srv \
-                "${2}"-cli-sles15 \
-                "${2}"-min-sles15 \
-                "${2}"-min-build \
-                "${2}"-min-centos7 \
-                "${2}"-min-kvm \
-                "${2}"-min-pxeboot \
-                "${2}"-min-ubuntu2004 \
-                "${2}"-min-xen \
-                "${2}"-minssh-sles15 \
-                "${2}"-pxy; do
+        for vm in $(virsh list --name| grep "^${2}"); do
             virsh start "${vm}"
         done
     else
@@ -154,18 +110,7 @@ stop () {
         exit 1;
     fi
     if [ "$3" == "all" ]; then
-        for vm in "${2}"-ctl \
-                "${2}"-srv \
-                "${2}"-cli-sles15 \
-                "${2}"-min-sles15 \
-                "${2}"-min-build \
-                "${2}"-min-centos7 \
-                "${2}"-min-kvm \
-                "${2}"-min-pxeboot \
-                "${2}"-min-ubuntu2004 \
-                "${2}"-min-xen \
-                "${2}"-minssh-sles15 \
-                "${2}"-pxy; do
+        for vm in $(virsh list --name| grep "^${2}"); do
             virsh shutdown "${vm}"
         done
     else
@@ -183,18 +128,7 @@ list () {
         exit 1;
     fi
     if [ "$3" == "all" ]; then
-        for vm in "${2}"-ctl \
-                "${2}"-srv \
-                "${2}"-cli-sles15 \
-                "${2}"-min-sles15 \
-                "${2}"-min-build \
-                "${2}"-min-centos7 \
-                "${2}"-min-kvm \
-                "${2}"-min-pxeboot \
-                "${2}"-min-ubuntu2004 \
-                "${2}"-min-xen \
-                "${2}"-minssh-sles15 \
-                "${2}"-pxy; do
+        for vm in $(virsh list --name| grep "^${2}"); do
             virsh snapshot-list "${vm}"
         done
     else
