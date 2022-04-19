@@ -7,9 +7,8 @@
 
 # TODO
 # - Add proper return codes
-# - Add ability to create/delete/revert snapshots for certain VMs and not always use all
 
-VERSION=0.8
+VERSION=0.9
 NAME=vms
 
 # Delete all VMs/pools/networks
@@ -25,7 +24,10 @@ clean () {
 create () {
     if [ -z "$3" ]; then
         echo "You have to provide a name for the snapshot. Example: core_passed"
-        echo "The snapshot is then created with the following name: <prefix>_core_passed"
+        echo "Example: $NAME create <prefix> <snapshot_name>"
+        echo "Example: $NAME create <vm_name> <snapshot_name>"
+        echo "Example: $NAME create dge core_passed"
+        echo "Example: $NAME create dge-srv core_passed"
         exit 1;
     fi
     echo "$3"
@@ -40,7 +42,9 @@ delete () {
         echo "You have to provide the name of the snapshot you want to delete."
         echo "To list the current snapshots use: $NAME list"
         echo "Example: $NAME delete <prefix> <snapshot_name>"
+        echo "Example: $NAME delete <vm_name> <snapshot_name>"
         echo "Example: $NAME delete dge core_passed"
+        echo "Example: $NAME delete dge-srv core_passed"
         exit 1;
     fi
     for vm in $(virsh list --name| grep "^${2}"); do
@@ -51,10 +55,12 @@ delete () {
 # Revert to snapshot
 revert () {
     if [ -z "$3" ]; then
-        echo "You have to provide the name of the snapshot you want to revert."
+        echo "You have to provide the name of the snapshot you want to revert to."
         echo "To list the current snapshots use: $NAME list"
         echo "Example: $NAME revert <prefix> <snapshot_name>"
+        echo "Example: $NAME revert <vm_name> <snapshot_name>"
         echo "Example: $NAME revert dge core_passed"
+        echo "Example: $NAME revert dge-srv core_passed"
         exit 1;
     fi
     for vm in $(virsh list --name| grep "^${2}"); do
@@ -169,26 +175,35 @@ help () {
     echo "  stop   Stop VMs"
     echo "  help   Print this help message"
     echo ""
-    echo "Examples:"
+    echo "Examples working with all VMs:"
     echo ""
     echo "  $NAME create dge core_passed"
     echo "  $NAME revert dge core_passed"
     echo "  $NAME delete dge core_passed"
     echo "  $NAME info"
-    echo "  $NAME info dge-srv"
     echo "  $NAME list dge all"
-    echo "  $NAME list dge dge-srv"
-    echo "  $NAME stop dge all"
-    echo "  $NAME stop dge dge-srv"
     echo "  $NAME start dge all"
+    echo "  $NAME stop dge all"
+    echo ""
+    echo "Examples working with only a specific VM:"
+    echo ""
+    echo "  $NAME create dge-srv core_passed"
+    echo "  $NAME revert dge-srv core_passed"
+    echo "  $NAME delete dge-srv core_passed"
+    echo "  $NAME info dge-srv"
+    echo "  $NAME list dge dge-srv"
     echo "  $NAME start dge dge-srv"
+    echo "  $NAME stop dge dge-srv"
+    echo ""
     exit 1
 }
 
 # Check if second parameter is empty
 check_par () {
     if [ -z "$2" ]; then
-        echo "You have to provide the prefix of the environment as a parameter. Example: dge"
+        echo "You have to provide the prefix of the environment or the VM name."
+        echo "Example prefix: dge"
+        echo "Example VM name: dge-srv"
         exit 1;
     fi
 }
@@ -233,4 +248,3 @@ case $1 in
         help
         ;;
 esac
-
