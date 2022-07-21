@@ -7,9 +7,12 @@
 
 # TODO
 # - Add proper return codes
+# - Add time sync support for RHEL
 
-VERSION=0.9
+VERSION=0.9.1
 NAME=vms
+PREFIX=.tf.local
+
 
 # Delete all VMs/pools/networks
 clean () {
@@ -159,21 +162,84 @@ list () {
     fi
 }
 
+# Synchronize the time on a VM after e.g. restoring a snapshot
+# Only work for openSUSE/SUSE right now.
+# TODO: Add RHEL support
+timesync () {
+    if [ -z "$3" ]; then
+        echo "You have to provide a prefix and <all> or <vm_name>."
+        echo "To list the current VMs use: $NAME info"
+        echo "Example: $NAME sync dge all"
+        echo "Example: $NAME sync dge cli-sles15"
+        exit 1;
+    fi
+    if [ "$3" == "all" ]; then
+        for vm in $(virsh list --all --name); do
+            echo "Host: $vm"
+            ssh -o LogLevel=ERROR root@$vm$PREFIX "
+            echo -n 'Old time: ';
+            date +%Y-%m-%d-%T;
+            systemctl restart systemd-timesyncd.service;
+            sleep 1;
+            echo -n 'New time: ';
+            date +%Y-%m-%d-%T;
+            exit"
+        done
+    else
+        vm=$3$PREFIX
+        echo "Host: $vm: "
+        ssh -o LogLevel=ERROR root@$vm "
+        echo -n 'Old time: ';
+        date +%Y-%m-%d-%T;
+        systemctl restart systemd-timesyncd.service;
+        sleep 1;
+        echo -n 'New time: ';
+        date +%Y-%m-%d-%T;"
+    fi
+}
+
+# Shows the current time on a VM
+# Only work for openSUSE/SUSE right now.
+# TODO: Add RHEL support
+timeshow () {
+    if [ -z "$3" ]; then
+        echo "You have to provide a prefix and <all> or <vm_name>."
+        echo "To list the current VMs use: $NAME info"
+        echo "Example: $NAME sync dge all"
+        echo "Example: $NAME sync dge cli-sles15"
+        exit 1;
+    fi
+    if [ "$3" == "all" ]; then
+        for vm in $(virsh list --all --name); do
+            echo -n "$vm: "
+            ssh -o LogLevel=ERROR root@$vm$PREFIX "
+            date +%Y-%m-%d-%T;
+            exit"
+        done
+    else
+        vm=$3$PREFIX
+        echo -n "$vm: "
+        ssh -o LogLevel=ERROR root@$vm "date +%Y-%m-%d-%T"
+    fi
+}
+
 # Show the help
 help () {
     echo "$NAME $VERSION"
     echo "Usage: $NAME OPTION [PARAMETER]"
     echo "Helper utility for working with VMs."
     echo ""
-    echo "  clean  Remove all VMs"
-    echo "  create Create a snapshot"
-    echo "  delete Delete a snapshot"
-    echo "  info   Show the name and the IP addresses of a VM"
-    echo "  list   Show the snapshots of a VM"
-    echo "  revert Revert to a given snapshot"
-    echo "  start  Start VMs"
-    echo "  stop   Stop VMs"
-    echo "  help   Print this help message"
+    echo "  clean     Remove all VMs"
+    echo "  create    Create a snapshot"
+    echo "  delete    Delete a snapshot"
+    echo "  info      Show the name and the IP addresses of a VM"
+    echo "  list      Show the snapshots of a VM"
+    echo "  revert    Revert to a given snapshot"
+    echo "  start     Start VMs"
+    echo "  stop      Stop VMs"
+    echo "  timeshow  Show the time on a VM"
+    echo "  timesync  Sync the time on a VM"
+    echo "  help      Print this help message"
     echo ""
     echo "Examples working with all VMs:"
     echo ""
@@ -194,6 +260,7 @@ help () {
     echo "  $NAME list dge dge-srv"
     echo "  $NAME start dge dge-srv"
     echo "  $NAME stop dge dge-srv"
+    echo "  $NAME timesync dge dge-srv"
     echo ""
     exit 1
 }
@@ -240,6 +307,14 @@ case $1 in
     stop)
         check_par $@
         stop $@
+        ;;
+    timesync)
+        check_par $@
+        timesync $@
+        ;;
+    timeshow)
+        check_par $@
+        timeshow $@
         ;;
     help | --help)
         help
